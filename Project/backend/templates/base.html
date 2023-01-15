@@ -1,0 +1,21 @@
+{% block content %}
+    {% if user.is_authenticated %}
+        {% block navigation_up %}
+            <ul>
+                <li><a href="{% url 'index' %}">Home</a></li>
+                <li><a href="{% url 'upload' %}">Upload</a></li>
+                <li><a href="{% url 'logout' %}">Log Out</a></li>
+            </ul>
+         {% endblock %}
+        Hi {{ user.username }}!
+    {% else %}
+        {% block navigation_down %}
+            <ul>
+                <li><a href="{% url 'login' %}">Log In</a></li>
+            </ul>
+        {% endblock %}
+    {% endif %}
+{% endblock %}
+
+{% block new_content %}
+{% endblock %}
