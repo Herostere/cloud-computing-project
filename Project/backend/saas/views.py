@@ -65,10 +65,13 @@ def image_upload_view(request):
 
             os.remove(image_to_test)
             Image.objects.all().delete()
+            model_size = os.path.getsize("Model_Suspect_Detection.h5")
+
             return render(request, 'upload.html', {'form': form,
                                                    'class_name': class_final,
                                                    'probability': probability,
                                                    'elapsed': elapsed,
+                                                   'model_size': model_size,
                                                    })
     else:
         form = ImageForm()

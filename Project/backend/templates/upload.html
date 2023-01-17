@@ -10,6 +10,6 @@
     {% if class_name %}
         <h3>Successfully uploaded!</h3>
         <p>There is a probability of {{ probability }}% that you uploaded a picture from the category "{{ class_name }}".</p>
-        <p>The model took {{ elapsed }} seconds to execute.</p>
+        <p>The model took {{ elapsed }} seconds to execute and weights {{ model_size }} bytes.</p>
     {% endif %}
 {% endblock %}
