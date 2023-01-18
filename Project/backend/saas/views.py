@@ -1,11 +1,13 @@
+import math
 import numpy as np
 import os
 import PIL
-import time
+import tempfile
 import tensorflow as tf
+import tensorflow_model_optimization as tfmot
+import time
 
 from django.shortcuts import render
-from keras import backend
 from keras.models import load_model
 
 from .forms import ImageForm
@@ -16,14 +18,125 @@ def index(request):
     return render(request, "base.html")
 
 
+def pruning(model):
+    prune_low_magnitude = tfmot.sparsity.keras.prune_low_magnitude
+
+    # Compute end step to finish pruning after 2 epochs.
+    batch_size = 128
+    epochs = 2
+    validation_split = 0.1  # 10% of training set will be used for validation set.
+
+    num_images = 846 * (1 - validation_split)
+    end_step = np.ceil(num_images / batch_size).astype(np.int32) * epochs
+
+    # Define model for pruning.
+    pruning_params = {
+        'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=0.50,
+                                                                 final_sparsity=0.80,
+                                                                 begin_step=0,
+                                                                 end_step=end_step)
+    }
+
+    model_for_pruning = prune_low_magnitude(model, **pruning_params)
+
+    # 'prune_low_magnitude' requires a recompile.
+    model_for_pruning.compile(optimizer='adam',
+                              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                              metrics=['accuracy'])
+
+    # print(model_for_pruning.summary())
+    log_dir = tempfile.mkdtemp()
+    callbacks = [
+        tfmot.sparsity.keras.UpdatePruningStep(),
+        tfmot.sparsity.keras.PruningSummaries(log_dir=log_dir),
+    ]
+
+    classes = [
+        'appareil photo', 'arme', 'autre', 'baton', 'couteau', 'drone', 'gilet jaune', 'grenade', 'personne'
+    ]
+    nb_classes = 9
+    batch_size = 128  # @param [1,2,4,8,16,32,64,128] {type:"raw"}
+    epochs = 4  # @param [2, 5, 10,20,50,100,200] {type:"raw"}
+    dataset_name = 'databases/Big_Suspect_Database'
+    train_dataset = os.path.join(dataset_name, 'train/')
+    test_dataset = os.path.join(dataset_name, 'test/')
+    input_dim = 224  # @param [224,299] {type:"raw"}
+    classifier = "MobileNet"
+
+    train_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        train_dataset,
+        validation_split=0.2,
+        subset="training",
+        seed=42,
+        image_size=(input_dim, input_dim),
+        batch_size=batch_size,
+        label_mode='categorical',
+    )
+
+    val_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        train_dataset,
+        validation_split=0.2,
+        subset="validation",
+        seed=42,
+        image_size=(input_dim, input_dim),
+        batch_size=batch_size,
+        label_mode='categorical',
+    )
+
+    train_ds = train_ds.unbatch()
+    train_images = list(train_ds.map(lambda x, y: x))
+    train_labels = list(train_ds.map(lambda x, y: y))
+
+    prune_low_magnitude = tfmot.sparsity.keras.prune_low_magnitude
+
+    # Compute end step to finish pruning after 2 epochs.
+    batch_size = 128
+    epochs = 2
+    validation_split = 0.1  # 10% of training set will be used for validation set.
+
+    num_images = len(train_images) * (1 - validation_split)
+    end_step = np.ceil(num_images / batch_size).astype(np.int32) * epochs
+
+    # Define model for pruning.
+    pruning_params = {
+        'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=0.50,
+                                                                 final_sparsity=0.80,
+                                                                 begin_step=0,
+                                                                 end_step=end_step)
+    }
+
+    model_for_pruning = prune_low_magnitude(model, **pruning_params)
+
+    # `prune_low_magnitude` requires a recompile.
+    model_for_pruning.compile(optimizer='adam',
+                              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                              metrics=['accuracy'])
+
+    logdir = tempfile.mkdtemp()
+
+    callbacks = [
+        tfmot.sparsity.keras.UpdatePruningStep(),
+        tfmot.sparsity.keras.PruningSummaries(log_dir=logdir),
+    ]
+
+    model_for_pruning.fit(train_images, train_labels,
+                          batch_size=batch_size, epochs=epochs, validation_split=validation_split,
+                          callbacks=callbacks)
+
+    return model_for_pruning
+
+
 def image_upload_view(request):
     if request.method == 'POST':
         form = ImageForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             img_obj = form.instance
+
             # ============== machine learning
-            model = load_model("Model_Suspect_Detection.h5")
+            # model = load_model("Model_Suspect_Detection.h5")
+            model = pruning(load_model("Model_Suspect_Detection.h5"))
+
             input_dim = 224
             classes = [
                 'appareil photo', 'arme', 'autre', 'baton', 'couteau', 'drone', 'gilet jaune', 'grenade', 'personne'
@@ -65,7 +178,7 @@ def image_upload_view(request):
 
             os.remove(image_to_test)
             Image.objects.all().delete()
-            model_size = os.path.getsize("Model_Suspect_Detection.h5")
+            model_size = os.path.getsize("Pruned.h5")
 
             return render(request, 'upload.html', {'form': form,
                                                    'class_name': class_final,
