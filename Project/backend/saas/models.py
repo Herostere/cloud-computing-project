@@ -48,8 +48,12 @@ def update_filename(instance, filename):
 
 class Image(models.Model):
     image = models.ImageField(upload_to=update_filename, blank=True)
-    initial_sparsity = models.FloatField()
-    target_sparsity = models.FloatField()
+
+
+class ImagePrune(models.Model):
+    image = models.ImageField(upload_to=update_filename, blank=True)
+    initial_sparsity = models.FloatField(default=0)
+    target_sparsity = models.FloatField(default=0)
     begin_step = models.IntegerField(default=0)
     end_step = models.IntegerField(default=0)
     granularity = models.CharField(max_length=9, choices=GRANULARITY_CHOICES, default="IRREGULAR")

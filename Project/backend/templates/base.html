@@ -3,16 +3,34 @@
         {% block navigation_up %}
             <ul>
                 <li><a href="{% url 'index' %}">Home</a></li>
-                <li><a href="{% url 'upload' %}">Upload</a></li>
+                {% if '/saas/' == request.path %}
+                    <li><a href="{% url 'upload' %}">Upload</a></li>
+                    <li><a href="{% url 'upload_prune' %}">Upload (Pruning)</a></li>
+                {% endif %}
+                {% if '/saas/upload/' == request.path %}
+                    <li><a href="{% url 'upload_prune' %}">Upload (Pruning)</a></li>
+                {% endif %}
+                {% if '/saas/upload_prune/' == request.path %}
+                    <li><a href="{% url 'upload' %}">Upload</a></li>
+                {% endif %}
                 <li><a href="{% url 'logout' %}">Log Out</a></li>
             </ul>
-         {% endblock %}
-        Hi {{ user.username }}!
+        {% endblock %}
+        {% if '/saas/' == request.path %}
+            <p>You are logged in as "{{ user.username }}".</p>
+            <p>You can upload an image et identify it using the "raw" model <a href="{% url 'upload' %}">here</a>.</p>
+            <p>Otherwise, you can upload an image and set some settings to prune the model <a href="{% url 'upload_prune' %}">here</a>.</p>
+        {% endif %}
     {% else %}
         {% block navigation_down %}
             <ul>
                 <li><a href="{% url 'login' %}">Log In</a></li>
+                <li><a href="{% url 'signup' %}">Sign Up</a></li>
             </ul>
+        {% endblock %}
+
+        {% block message %}
+            Welcome to your image identification online service.
         {% endblock %}
     {% endif %}
 {% endblock %}

@@ -1,9 +1,10 @@
 from django.urls import path
 
-from . import views
+from .views import image_upload_view, image_upload_prune_view, index
 
 
 urlpatterns = [
-    path('', views.index, name='index'),
-    path('upload/', views.image_upload_view, name='upload'),
+    path('', index, name='index'),
+    path('upload/', image_upload_view, name='upload'),
+    path('upload_prune/', image_upload_prune_view, name='upload_prune'),
 ]
