@@ -9,6 +9,7 @@ import time
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from keras.models import load_model
+from pathlib import Path
 
 from .forms import ImageForm, ImageFormPrune
 from .models import Image
@@ -29,8 +30,8 @@ def pruning(model):
     # Count number of images used for training
     dirs_count = 0
     files_count = 0
-    for path, dirs, files in os.walk(
-            "/home/sam/Documents/cloud-computing-project/Project/backend/databases/Big_Suspect_Database/train"):
+    directory = Path(__file__).resolve().parent.parent
+    for path, dirs, files in os.walk(os.path.join(directory, "databases/Big_Suspect_Database/train")):
         dirs_count += len(dirs)
         files_count += len(files)
 
@@ -61,7 +62,7 @@ def pruning(model):
 
     batch_size = 128  # @param [1,2,4,8,16,32,64,128] {type:"raw"}
     epochs = 2  # @param [2, 5, 10,20,50,100,200] {type:"raw"}
-    dataset_name = '/home/sam/Documents/cloud-computing-project/Project/backend/databases/Big_Suspect_Database'
+    dataset_name = os.path.join(directory, 'databases/Big_Suspect_Database')
     train_dataset = os.path.join(dataset_name, 'train/')
     test_dataset = os.path.join(dataset_name, 'test/')
     input_dim = 255  # @param [224,299] {type:"raw"}
@@ -80,6 +81,7 @@ def pruning(model):
     train_images = list(train_ds.map(lambda x, y: x))
     train_labels = list(train_ds.map(lambda x, y: y))
 
+    print("*" * 10 + " TRAIN")
     model_for_pruning.fit(train_images, train_labels,
                           batch_size=batch_size, epochs=epochs,
                           validation_split=validation_split,
