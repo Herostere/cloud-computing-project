@@ -1,15 +1,17 @@
 {% extends "base.html" %}
 
-{% block new_content %}
+{% block content %}
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">Upload</button>
+        <button type="submit" class="btn btn-primary btn-block">Upload</button>
     </form>
 
     {% if class_name %}
-        <h3>Successfully uploaded!</h3>
-        <p>There is a probability of {{ probability }}% that you uploaded a picture from the category "{{ class_name }}".</p>
-        <p>The model took {{ elapsed }} seconds to execute and weights {{ model_size }} bytes.</p>
+        <div class="alert alert-success">
+            <h3>Successfully uploaded!</h3>
+            <p>There is a probability of <strong>{{ probability }}%</strong> that you uploaded a picture from the category "<strong>{{ class_name }}"</strong>.</p>
+            <p>The model took <strong>{{ elapsed }} seconds</strong> to execute and weights <strong>{{ model_size }} bytes</strong>.</p>
+        </div>
     {% endif %}
 {% endblock %}

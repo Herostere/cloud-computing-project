@@ -95,7 +95,6 @@ def image_upload_view(request):
         if form.is_valid():
             form.save()
             img_obj = form.instance
-
             # ============== machine learning
             model = load_model("Model_Suspect_Detection.h5")
             # model = pruning(load_model("Model_Suspect_Detection.h5"))
@@ -163,8 +162,8 @@ def image_upload_prune_view(request):
             img_obj = form.instance
 
             # ============== machine learning
-            model = load_model("Model_Suspect_Detection.h5")
-            # model = pruning(load_model("Model_Suspect_Detection.h5"))
+            # model = load_model("Model_Suspect_Detection.h5")
+            model = pruning(load_model("Model_Suspect_Detection.h5"))
 
             input_dim = 224
             classes = [
