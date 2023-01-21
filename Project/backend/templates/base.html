@@ -97,7 +97,7 @@
                         {% endblock %}
                     {% endif %}
                 {% else %}
-                    {% if '/accounts/login/' == request.path %}
+                    {% if '/accounts/login/' == request.path or '/accounts/signup/' == request.path %}
                         {% block login %}
                         {% endblock %}
                     {% else %}
