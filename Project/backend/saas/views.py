@@ -19,7 +19,8 @@ def index(request):
     return render(request, "base.html")
 
 
-def pruning(model):
+def pruning(model, initial_sparsity, target_sparsity, begin_step, end_step, granularity, pruning_type, scheduling,
+            mode):
     prune_low_magnitude = tfmot.sparsity.keras.prune_low_magnitude
 
     # Compute end step to finish pruning after 2 epochs.
@@ -36,15 +37,22 @@ def pruning(model):
         files_count += len(files)
 
     num_images = files_count * (1 - validation_split)
-    end_step = np.ceil(num_images / batch_size).astype(np.int32) * epochs
+    # end_step = np.ceil(num_images / batch_size).astype(np.int32) * epochs
 
     # Define model for pruning.
-    pruning_params = {
-        'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=0.50,
-                                                                 final_sparsity=0.80,
-                                                                 begin_step=0,
-                                                                 end_step=end_step)
-    }
+    if pruning_type == "polynomial":
+        pruning_params = {
+            'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=initial_sparsity,
+                                                                     final_sparsity=target_sparsity,
+                                                                     begin_step=begin_step,
+                                                                     end_step=end_step)
+        }
+    else:
+        pruning_params = {
+            'pruning_schedule': tfmot.sparsity.keras.ConstantSparsity(target_sparsity=target_sparsity,
+                                                                      begin_step=begin_step,
+                                                                      end_step=end_step)
+        }
 
     model_for_pruning = prune_low_magnitude(model, **pruning_params)
 
