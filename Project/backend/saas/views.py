@@ -23,22 +23,6 @@ def pruning(model, initial_sparsity, target_sparsity, begin_step, end_step, gran
             mode):
     prune_low_magnitude = tfmot.sparsity.keras.prune_low_magnitude
 
-    # Compute end step to finish pruning after 2 epochs.
-    batch_size = 128
-    epochs = 2
-    validation_split = 0.1  # 10% of training set will be used for validation set.
-
-    # Count number of images used for training
-    dirs_count = 0
-    files_count = 0
-    directory = Path(__file__).resolve().parent.parent
-    for path, dirs, files in os.walk(os.path.join(directory, "databases/Big_Suspect_Database/train")):
-        dirs_count += len(dirs)
-        files_count += len(files)
-
-    num_images = files_count * (1 - validation_split)
-    # end_step = np.ceil(num_images / batch_size).astype(np.int32) * epochs
-
     # Define model for pruning.
     if pruning_type == "polynomial":
         pruning_params = {
@@ -56,28 +40,34 @@ def pruning(model, initial_sparsity, target_sparsity, begin_step, end_step, gran
 
     model_for_pruning = prune_low_magnitude(model, **pruning_params)
 
-    # 'prune_low_magnitude' requires a recompile.
     model_for_pruning.compile(optimizer='adam',
-                              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                              loss="categorical_crossentropy",
                               metrics=['accuracy'])
     model_for_pruning.summary()
+    model.summary()
 
-    log_dir = tempfile.mkdtemp()
+    log_dir = "Big_Suspect_Database"
     callbacks = [
         tfmot.sparsity.keras.UpdatePruningStep(),
         tfmot.sparsity.keras.PruningSummaries(log_dir=log_dir),
     ]
 
-    batch_size = 128  # @param [1,2,4,8,16,32,64,128] {type:"raw"}
-    epochs = 2  # @param [2, 5, 10,20,50,100,200] {type:"raw"}
-    dataset_name = os.path.join(directory, 'databases/Big_Suspect_Database')
+    directory = Path(__file__).resolve().parent.parent
+
+    batch_size = 32  # @param [1,2,4,8,16,32,64,128] {type:"raw"}
+    epochs = 10  # @param [2, 5, 10,20,50,100,200] {type:"raw"}
+    # dataset_name = os.path.join(directory, 'databases/Big_Suspect_Database')
+    dataset_name = os.path.join(directory, 'databases/Small_Suspect_Database')
     train_dataset = os.path.join(dataset_name, 'train/')
     test_dataset = os.path.join(dataset_name, 'test/')
-    input_dim = 255  # @param [224,299] {type:"raw"}
+    input_dim = 224  # @param [224,299] {type:"raw"}
+
+    # Compute end step to finish pruning after 2 epochs.
+    validation_split = 0.2  # 10% of training set will be used for validation set.
 
     train_ds = tf.keras.preprocessing.image_dataset_from_directory(
         train_dataset,
-        validation_split=0.2,
+        validation_split=validation_split,
         subset="training",
         seed=42,
         image_size=(input_dim, input_dim),
@@ -85,16 +75,36 @@ def pruning(model, initial_sparsity, target_sparsity, begin_step, end_step, gran
         label_mode='categorical',
     )
 
-    train_ds = train_ds.unbatch()
-    train_images = list(train_ds.map(lambda x, y: x))
-    train_labels = list(train_ds.map(lambda x, y: y))
+    val_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        train_dataset,
+        validation_split=0.2,
+        subset="validation",
+        seed=42,
+        image_size=(input_dim, input_dim),
+        batch_size=batch_size,
+        label_mode='categorical'
+    )
 
-    print("*" * 10 + " TRAIN")
-    model_for_pruning.fit(train_images, train_labels,
-                          batch_size=batch_size, epochs=epochs,
-                          validation_split=validation_split,
+    test_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        test_dataset,
+        seed=42,
+        image_size=(224, 224),
+        batch_size=batch_size,
+        label_mode='categorical'
+    )
+
+    model_for_pruning.fit(train_ds,
+                          validation_data=val_ds,
+                          batch_size=batch_size,
+                          epochs=epochs,
                           callbacks=callbacks)
-
+    _, model_for_pruning_accuracy = model_for_pruning.evaluate(test_ds)
+    print("Pruned test accuracy: {:.2f}%".format(model_for_pruning_accuracy * 100))
+    model_for_pruning.save("Pruned.h5")
+    model_for_export = tfmot.sparsity.keras.strip_pruning(model_for_pruning)
+    _, pruned_keras_file = tempfile.mkstemp('.h5')
+    tf.keras.models.save_model(model_for_export, pruned_keras_file, include_optimizer=False)
+    print('Saved pruned Keras model to:', pruned_keras_file)
     return model_for_pruning
 
 
