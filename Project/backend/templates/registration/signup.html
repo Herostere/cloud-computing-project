@@ -3,6 +3,6 @@
 {% block login %}
     <form class="form-horizontal" method="post">
         {% csrf_token %}
-        {% form.as_p %}
+        {{ form.as_p }}
         <button id="btn-login" type="submit" class="btn btn-success">Create Account</button>
 {% endblock %}
