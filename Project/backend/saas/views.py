@@ -173,10 +173,12 @@ def image_upload_prune_view(request):
 
             # ============== machine learning
             # model = load_model("Model_Suspect_Detection.h5")
-            model = pruning(load_model("Model_Suspect_Detection.h5"), form.instance.initial_sparsity,
-                            form.instance.target_sparsity, form.instance.begin_step, form.instance.end_step,
-                            form.instance.granularity, form.instance.pruning_type, form.instance.scheduling,
-                            form.instance.mode)
+            model = pruning(
+                load_model(os.path.join(Path(__file__).resolve().parent.parent, "Model_Suspect_Detection.h5")),
+                form.instance.initial_sparsity, form.instance.target_sparsity, form.instance.begin_step,
+                form.instance.end_step, form.instance.granularity, form.instance.pruning_type, form.instance.scheduling,
+                form.instance.mode
+            )
 
             input_dim = 224
             classes = [
