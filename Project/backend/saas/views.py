@@ -106,7 +106,7 @@ def image_upload_view(request):
             form.save()
             img_obj = form.instance
             # ============== machine learning
-            model = load_model("Model_Suspect_Detection.h5")
+            model = load_model(os.path.join(Path(__file__).resolve().parent.parent, "Model_Suspect_Detection.h5"))
             # model = pruning(load_model("Model_Suspect_Detection.h5"))
 
             input_dim = 224
