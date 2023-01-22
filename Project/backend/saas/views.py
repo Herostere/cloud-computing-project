@@ -100,13 +100,14 @@ def pruning(model, initial_sparsity, target_sparsity, begin_step, end_step, gran
 
 @login_required
 def image_upload_view(request):
+    directory = Path(__file__).resolve().parent.parent
     if request.method == 'POST':
         form = ImageForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             img_obj = form.instance
             # ============== machine learning
-            model = load_model(os.path.join(Path(__file__).resolve().parent.parent, "Model_Suspect_Detection.h5"))
+            model = load_model(os.path.join(directory, "Model_Suspect_Detection.h5"))
             # model = pruning(load_model("Model_Suspect_Detection.h5"))
 
             input_dim = 224
@@ -125,7 +126,7 @@ def image_upload_view(request):
                 "personne": "people",
             }
 
-            image_to_test = "media/" + str(img_obj.image)
+            image_to_test = os.path.join(directory, "media", str(img_obj.image))
 
             img = PIL.Image.open(image_to_test).convert('RGB')
             x = tf.keras.utils.img_to_array(img, data_format='channels_last')
@@ -150,7 +151,7 @@ def image_upload_view(request):
 
             os.remove(image_to_test)
             Image.objects.all().delete()
-            model_size = os.path.getsize("Model_Suspect_Detection.h5")
+            model_size = os.path.getsize(os.path.join(directory, "Model_Suspect_Detection.h5"))
 
             return render(request, 'upload.html', {'form': form,
                                                    'class_name': class_final,
