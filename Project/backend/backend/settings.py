@@ -36,9 +36,7 @@ SECRET_KEY = 'django-insecure-(ob8(u8ml0jfkkfx^60w!9rsf6t3h77im=)zy3k#n=8=#hud)^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["sidi.cloud",
-                 "localhost",
-                 "195.154.19.214"]
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
